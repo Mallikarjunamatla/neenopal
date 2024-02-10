@@ -1,95 +1,113 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+'use client';
+import React, { useState, useEffect, useRef } from 'react';
+// import { Row, Col } from 'antd';
+import './globals.css';
+import Person, { UserData } from '@/components/Person';
+
+import jsonData from '../data.json';
+import Modal from '@/components/Modal';
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+  const [users, setUsers] = useState<any[]>([]);
+  const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<UserData>({
+    email: '',
+    id: '',
+    name: '',
+    phone: '',
+    username: '',
+    website: '',
+  });
+
+  const [transformOrigin, setTransformOrigin] = useState('center');
+
+  const modalContentRef: any = useRef(null);
+  // const transformOrigin: any = useRef('center');
+  const timeOutId = useRef();
+  useEffect(() => {
+    setTimeout(() => {
+      setUsers(jsonData);
+    }, 2000);
+  }, []);
+
+  const deleteUser = (id: any) => {
+    setUsers((prevUsers) => prevUsers.filter((entry) => entry.id !== id));
+  };
+
+  const updateUser = (id: any, data: any) => {
+    setUsers((prevUsers) =>
+      prevUsers.map((entry) => {
+        if (entry.id === id) return { ...entry, ...data };
+        return entry;
+      })
+    );
+  };
+  const handleOk = (formData: any) => {
+    updateUser(formData.id, formData);
+    closeModal();
+  };
+
+  const closeModal = () => {
+    document.body.style.overflow = 'auto';
+    document.body.style.marginRight = '';
+    setEditModalVisible(false);
+   
+    (timeOutId.current as any) = setTimeout(() => {
+      setTransformOrigin(`center`);
+    });
+  };
+
+  const openModal = (event: any, userData: any) => {
+    const currentWidth = document.body.offsetWidth;
+    document.body.style.overflow = 'hidden';
+    const scrollBarWidth = document.body.offsetWidth - currentWidth;
+    document.body.style.marginRight = `${scrollBarWidth}px`;
+
+    clearTimeout(timeOutId.current);
+    setCurrentUser(userData);
+    const buttonRect = event.target.getBoundingClientRect();
+    const modalContentRect = modalContentRef?.current?.getBoundingClientRect();
+
+    const offsetX =
+      buttonRect.left + buttonRect.width / 2 - modalContentRect.left;
+    const offsetY =
+      buttonRect.top + buttonRect.height / 2 - modalContentRect.top;
+    setTransformOrigin(`${offsetX}px ${offsetY}px`);
+    setEditModalVisible(true);
+  };
+
+  if (users.length === 0) {
+    return (
+      <div>
+        <div className="spinner">
+          <div className="bounce1" />
+          <div className="bounce2" />
+          <div className="bounce3" />
         </div>
       </div>
+    );
+  }
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+  return (
+    <div className="users">
+      {users.map((user) => (
+        <div key={user.username}>
+          <Person
+            user={user}
+            deleteUser={deleteUser}
+            updateUser={updateUser}
+            openModal={openModal}
+          />
+        </div>
+      ))}
+      <Modal
+        closeModal={closeModal}
+        editModalVisible={editModalVisible}
+        formData={currentUser}
+        handleOk={handleOk}
+        transformOrigin={transformOrigin}
+        ref={modalContentRef}
+      />
+    </div>
+  );
 }
